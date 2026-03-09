@@ -1,0 +1,620 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Prince's North Minneapolis</title>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,600;1,400&family=Jost:wght@300;400;500&display=swap" rel="stylesheet">
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+html, body { height: 100%; }
+
+body {
+  font-family: 'Jost', sans-serif;
+  background: #f5f0fa;
+  color: #1a1025;
+}
+
+header {
+  height: 54px;
+  padding: 0 28px;
+  background: #1a0d2e;
+  border-bottom: 2px solid rgba(140,90,220,0.4);
+  display: flex;
+  align-items: center;
+  gap: 18px;
+}
+
+header h1 {
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 1.6rem;
+  font-weight: 600;
+  color: #e8d5ff;
+  letter-spacing: 0.02em;
+  white-space: nowrap;
+}
+
+header p {
+  font-size: 0.74rem;
+  font-weight: 300;
+  color: #c9aaee;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+#map {
+  width: 100%;
+  height: calc(100vh - 54px);
+}
+
+/* Legend */
+.legend {
+  position: absolute;
+  bottom: 28px;
+  left: 20px;
+  background: rgba(255,252,255,0.96);
+  border: 1px solid rgba(140,90,200,0.25);
+  border-radius: 8px;
+  padding: 15px 18px;
+  z-index: 1000;
+  min-width: 228px;
+  backdrop-filter: blur(10px);
+  box-shadow: 0 4px 20px rgba(80,40,120,0.15);
+}
+
+.legend-title {
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: #6b3fa0;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  margin-bottom: 11px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  cursor: pointer;
+  user-select: none;
+}
+
+.legend-toggle-arrow {
+  font-size: 0.7rem;
+  color: #9b7ec8;
+  transition: transform 0.25s ease;
+  display: none;
+}
+
+.legend-body {
+  overflow: hidden;
+  transition: max-height 0.3s ease;
+}
+
+@media (max-width: 600px) {
+  .legend {
+    min-width: 170px;
+    padding: 10px 13px;
+    bottom: 16px;
+    left: 10px;
+  }
+  .legend-toggle-arrow { display: inline; }
+  .legend-body.collapsed { max-height: 0 !important; }
+}
+
+.legend-item {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  margin-bottom: 9px;
+}
+
+.legend-icon {
+  flex-shrink: 0;
+  width: 24px;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.legend-text strong {
+  display: block;
+  font-size: 0.78rem;
+  font-weight: 500;
+  color: #2a1040;
+}
+
+.legend-text span {
+  font-size: 0.69rem;
+  font-weight: 300;
+  color: #8a6aaa;
+  line-height: 1.4;
+}
+
+.legend-divider {
+  border: none;
+  border-top: 1px solid rgba(140,90,200,0.15);
+  margin: 9px 0;
+}
+
+/* Popups */
+.leaflet-popup-content-wrapper {
+  background: rgba(255,253,255,0.98) !important;
+  border: 1px solid rgba(140,90,200,0.3) !important;
+  border-radius: 8px !important;
+  box-shadow: 0 10px 36px rgba(0,0,0,0.65) !important;
+  padding: 0 !important;
+}
+
+.leaflet-popup-content {
+  margin: 0 !important;
+  width: 248px !important;
+}
+
+.leaflet-popup-tip {
+  background: rgba(255,253,255,0.98) !important;
+}
+
+.leaflet-popup-close-button {
+  color: #9b7ec8 !important;
+  font-size: 16px !important;
+  top: 6px !important;
+  right: 8px !important;
+}
+
+.popup-inner { padding: 15px 17px 13px; }
+
+.popup-cat {
+  font-size: 0.63rem;
+  font-weight: 500;
+  letter-spacing: 0.13em;
+  text-transform: uppercase;
+  margin-bottom: 4px;
+}
+
+.cat-home   { color: #7b3fa8; }
+.cat-music  { color: #9a7a20; }
+.cat-museum { color: #9900cc; }
+
+.popup-name {
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 1.05rem;
+  font-weight: 600;
+  color: #1a1025;
+  line-height: 1.25;
+  margin-bottom: 3px;
+}
+
+.popup-addr {
+  font-size: 0.7rem;
+  font-weight: 300;
+  color: #9878c0;
+  margin-bottom: 7px;
+}
+
+.popup-dates {
+  font-size: 0.72rem;
+  font-weight: 500;
+  color: #7040b0;
+  margin-bottom: 7px;
+}
+
+.popup-note {
+  font-size: 0.75rem;
+  font-weight: 300;
+  color: #4a3a5a;
+  line-height: 1.58;
+}
+
+.popup-nrhp {
+  display: inline-block;
+  margin-top: 9px;
+  font-size: 0.61rem;
+  font-weight: 500;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  background: rgba(180,140,255,0.1);
+  border: 1px solid rgba(180,140,255,0.22);
+  color: #c9a8f0;
+  padding: 2px 7px;
+  border-radius: 3px;
+}
+
+.popup-gone {
+  display: inline-block;
+  margin-top: 9px;
+  font-size: 0.61rem;
+  font-weight: 500;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  background: rgba(200,169,81,0.07);
+  border: 1px solid rgba(200,169,81,0.18);
+  color: #a08840;
+  padding: 2px 7px;
+  border-radius: 3px;
+}
+
+.leaflet-control-attribution {
+  background: rgba(255,255,255,0.85) !important;
+  color: #9878c0 !important;
+  font-size: 0.6rem !important;
+}
+.leaflet-control-attribution a { color: #7040b0 !important; }
+.leaflet-control-zoom a {
+  background: rgba(255,255,255,0.95) !important;
+  color: #6b3fa0 !important;
+  border-color: rgba(140,90,200,0.3) !important;
+}
+.leaflet-control-zoom a:hover { background: rgba(180,140,255,0.2) !important; }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>Prince's North Minneapolis</h1>
+  <p>A geography of place &amp; music &nbsp;&middot;&nbsp; The People's Museum for Prince &nbsp;&middot;&nbsp; June 2026</p>
+</header>
+
+<div id="map">
+  <div class="legend">
+    <div class="legend-title" onclick="toggleLegend()">
+      Map Key <span class="legend-toggle-arrow" id="legendArrow">▼</span>
+    </div>
+    <div class="legend-body" id="legendBody">
+    <div class="legend-item">
+      <div class="legend-icon">
+        <svg width="22" height="22" viewBox="0 0 22 22" xmlns="http://www.w3.org/2000/svg">
+          <path d="M11 2 L2 9 L2 20 L8 20 L8 14 L14 14 L14 20 L20 20 L20 9 Z" fill="#5C2D91" stroke="#c9a8f0" stroke-width="1.2"/>
+        </svg>
+      </div>
+      <div class="legend-text">
+        <strong>Home &amp; Community</strong>
+        <span>Where Prince grew up in North Minneapolis</span>
+      </div>
+    </div>
+
+    <div class="legend-item">
+      <div class="legend-icon">
+        <svg width="22" height="22" viewBox="0 0 22 22" xmlns="http://www.w3.org/2000/svg">
+          <path d="M11 2 L2 9 L2 20 L8 20 L8 14 L14 14 L14 20 L20 20 L20 9 Z" fill="rgba(140,90,200,0.1)" stroke="#8050c0" stroke-width="2" stroke-dasharray="4,3" opacity="0.75"/>
+        </svg>
+      </div>
+      <div class="legend-text">
+        <strong style="color:#7a60a8">Home &amp; Community &mdash; gone</strong>
+        <span>Site no longer standing</span>
+      </div>
+    </div>
+
+    <hr class="legend-divider">
+
+    <div class="legend-item">
+      <div class="legend-icon">
+        <svg width="22" height="22" viewBox="0 0 22 22" xmlns="http://www.w3.org/2000/svg">
+          <svg width="16" height="22" viewBox="0 0 22 30" style="shape-rendering:geometricPrecision"><line x1="16" y1="3" x2="16" y2="23" stroke="#3d0070" stroke-width="2" stroke-linecap="round"/><path d="M16,3 C22,6 22,12 16,14" fill="none" stroke="#3d0070" stroke-width="1.4" stroke-linecap="round"/><ellipse cx="10" cy="23" rx="8" ry="5.5" transform="rotate(-20 10 23)" fill="#5C1A9E" stroke="#3d0070" stroke-width="1.4"/></svg>
+        </svg>
+      </div>
+      <div class="legend-text">
+        <strong style="color:#5a1a9a">Where the Music Was Born</strong>
+        <span>Rehearsal spaces, studios &amp; performances</span>
+      </div>
+    </div>
+
+    <div class="legend-item">
+      <div class="legend-icon">
+        <svg width="22" height="22" viewBox="0 0 22 22" xmlns="http://www.w3.org/2000/svg">
+          <svg width="16" height="22" viewBox="0 0 22 30" style="shape-rendering:geometricPrecision;opacity:0.6"><line x1="16" y1="3" x2="16" y2="23" stroke="rgba(90,30,150,0.7)" stroke-width="1.6" stroke-linecap="round"/><path d="M16,3 C22,6 22,12 16,14" fill="none" stroke="rgba(90,30,150,0.7)" stroke-width="1.4" stroke-linecap="round"/><ellipse cx="10" cy="23" rx="8" ry="5.5" transform="rotate(-20 10 23)" fill="rgba(90,30,150,0.15)" stroke="rgba(90,30,150,0.7)" stroke-width="1.4"/></svg>
+        </svg>
+      </div>
+      <div class="legend-text">
+        <strong style="color:#8a70b0">Music Site &mdash; gone</strong>
+        <span>Site no longer standing</span>
+      </div>
+    </div>
+
+    <hr class="legend-divider">
+
+    <div class="legend-item">
+      <div class="legend-icon">
+        <svg width="22" height="22" viewBox="0 0 22 22" xmlns="http://www.w3.org/2000/svg">
+          <svg width="18" height="17" viewBox="0 0 38 36" style="shape-rendering:geometricPrecision"><path d="M19 32 C19 32 3 20 3 10.5 C3 5.8 6.8 2 11.5 2 C14.2 2 16.7 3.4 19 6 C21.3 3.4 23.8 2 26.5 2 C31.2 2 35 5.8 35 10.5 C35 20 19 32 19 32 Z" fill="#B300E0" stroke="#7a00a0" stroke-width="1.5"/></svg>
+        </svg>
+      </div>
+      <div class="legend-text">
+        <strong style="color:#CC44FF">The People's Museum for Prince</strong>
+        <span>Roberts Gallery &middot; June 7&ndash;27, 2026</span>
+      </div>
+    </div>
+    </div><!-- end legend-body -->
+  </div>
+</div>
+
+<script>
+function toggleLegend() {
+  var body = document.getElementById('legendBody');
+  var arrow = document.getElementById('legendArrow');
+  if (window.innerWidth > 600) return;
+  if (body.classList.contains('collapsed')) {
+    body.classList.remove('collapsed');
+    body.style.maxHeight = body.scrollHeight + 'px';
+    arrow.style.transform = 'rotate(0deg)';
+  } else {
+    body.style.maxHeight = body.scrollHeight + 'px';
+    setTimeout(function(){ body.classList.add('collapsed'); }, 10);
+    arrow.style.transform = 'rotate(-90deg)';
+  }
+}
+// Set initial max-height for animation
+window.addEventListener('load', function(){
+  var body = document.getElementById('legendBody');
+  body.style.maxHeight = body.scrollHeight + 'px';
+});
+</script>
+
+<script>
+window.onload = function() {
+var map = L.map('map', {
+  center: [45.002, -93.295],
+  zoom: 14,
+  minZoom: 13,
+  maxZoom: 18,
+  maxBounds: [[44.93, -93.40], [45.07, -93.20]],
+  maxBoundsViscosity: 0.85
+});
+
+L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
+  attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/">CARTO</a>',
+  subdomains: 'abcd',
+  maxZoom: 19
+}).addTo(map);
+
+// ── Icon factories ──────────────────────────────────────────────────
+
+function houseIcon(ghost, withNote) {
+  var fill   = ghost ? 'rgba(130,80,200,0.12)' : '#5C2D91';
+  var stroke = ghost ? '#7040b8' : '#7b3fb0';
+  var dash   = ghost ? 'stroke-dasharray="5,3"' : '';
+  var sw     = ghost ? '2.5' : '1.5';
+  var op     = ghost ? '0.8' : '1';
+  var svg = '<svg xmlns="http://www.w3.org/2000/svg" width="28" height="30" viewBox="0 0 28 30" style="overflow:visible">'
+    + '<g opacity="' + op + '" style="shape-rendering:geometricPrecision">'
+    + '<path d="M14 3 L2 12 L2 27 L10 27 L10 19 L18 19 L18 27 L26 27 L26 12 Z" fill="' + fill + '" stroke="' + stroke + '" stroke-width="' + sw + '" stroke-linejoin="round" ' + dash + '/>'
+    + '</g></svg>';
+  return L.divIcon({ html: svg, className: '', iconSize: [28,30], iconAnchor: [14,27], popupAnchor: [0,-27] });
+}
+
+function musicIcon(ghost) {
+  // Drawn eighth note: oval head + stem + flag — pure SVG paths
+  var headFill = ghost ? 'rgba(90,30,150,0.2)' : '#5C1A9E';
+  var color    = ghost ? 'rgba(90,30,150,0.7)' : '#3d0070';
+  var sw       = ghost ? '1.6' : '1.4';
+  var op       = ghost ? '0.7' : '1';
+  var svg = '<svg xmlns="http://www.w3.org/2000/svg" width="22" height="30" viewBox="0 0 22 30" style="overflow:visible" opacity="' + op + '">'
+    + '<g style="shape-rendering:geometricPrecision">'
+    // Stem: vertical line on right side
+    + '<line x1="16" y1="3" x2="16" y2="23" stroke="' + color + '" stroke-width="2" stroke-linecap="round"/>'
+    // Flag: curve from top of stem
+    + '<path d="M16,3 C22,6 22,12 16,14" fill="none" stroke="' + color + '" stroke-width="' + sw + '" stroke-linecap="round"/>'
+    // Note head: solid filled ellipse, rotated
+    + '<ellipse cx="10" cy="23" rx="8" ry="5.5" transform="rotate(-20 10 23)" fill="' + headFill + '" stroke="' + color + '" stroke-width="' + sw + '"/>'
+    + '</g></svg>';
+  return L.divIcon({ html: svg, className: '', iconSize: [22,30], iconAnchor: [11,27], popupAnchor: [0,-27] });
+}
+
+function museumIcon() {
+  // Clean SVG heart path — no unicode, crisp geometry
+  // Heart centered in 34x32 viewBox
+  var svg = '<svg xmlns="http://www.w3.org/2000/svg" width="38" height="36" viewBox="0 0 38 36" style="overflow:visible;filter:drop-shadow(0 2px 4px rgba(100,0,180,0.45)) drop-shadow(0 0 10px rgba(180,0,255,0.3))">'
+    + '<g style="shape-rendering:geometricPrecision">'
+    + '<path d="M19 32 C19 32 3 20 3 10.5 C3 5.8 6.8 2 11.5 2 C14.2 2 16.7 3.4 19 6 C21.3 3.4 23.8 2 26.5 2 C31.2 2 35 5.8 35 10.5 C35 20 19 32 19 32 Z" fill="#B300E0" stroke="#7a00a0" stroke-width="1.2"/>'
+    + '</g></svg>';
+  return L.divIcon({ html: svg, className: '', iconSize: [38,36], iconAnchor: [19,33], popupAnchor: [0,-33] });
+}
+
+// ── Popup builder ───────────────────────────────────────────────────
+
+function mkPopup(catClass, catLabel, name, addr, dates, note, nrhp, gone) {
+  var nrhpBadge = nrhp ? '<div class="popup-nrhp">National Register of Historic Places, 2020</div>' : '';
+  var goneBadge = gone ? '<div class="popup-gone">Site no longer standing</div>' : '';
+  return '<div class="popup-inner">'
+    + '<div class="popup-cat ' + catClass + '">' + catLabel + '</div>'
+    + '<div class="popup-name">' + name + '</div>'
+    + '<div class="popup-addr">' + addr + '</div>'
+    + '<div class="popup-dates">' + dates + '</div>'
+    + '<div class="popup-note">' + note + '</div>'
+    + nrhpBadge + goneBadge
+    + '</div>';
+}
+
+// ── Places ──────────────────────────────────────────────────────────
+
+var places = [
+
+  // HOME & COMMUNITY — extant
+
+  { lat: 45.0112, lng: -93.289, icon: houseIcon(false, false),
+    popup: mkPopup('cat-home', 'Home &amp; Community',
+      '8th Avenue Childhood Home',
+      '2620 8th Avenue North, Minneapolis',
+      '1965 &ndash; c.1972 &middot; Ages 6&ndash;12',
+      'Where Prince mastered piano and guitar and wrote his first song, Funk Machine, around age seven. His cousin Chazz Smith said this was "where it all happened" musically. After his father left, Prince described the freedom of playing piano any time he wanted as a liberation that changed everything.',
+      true, false)
+  },
+
+  { lat: 45.0042, lng: -93.2855, icon: houseIcon(false, false),
+    popup: mkPopup('cat-home', 'Home &amp; Community',
+      "John Nelson's House",
+      '539 Newton Avenue North, Minneapolis',
+      '1972 &ndash; c.1973 &middot; Ages 13&ndash;14',
+      "Prince moved in with his father during his early teens, unwilling to follow his stepfather's rules. According to cousin Chazz, he left because he didn't like anybody telling him what to do &mdash; his focus on music was already total.",
+      false, false)
+  },
+
+  { lat: 44.9932, lng: -93.2862, icon: houseIcon(false, false),
+    popup: mkPopup('cat-home', 'Home &amp; Community',
+      "John Nelson's Apartment",
+      '1707 Glenwood Avenue North #105, Minneapolis',
+      '1970 &ndash; 1972',
+      "John Nelson's apartment after his divorce from Mattie. Prince stayed here regularly during the years he moved between his parents' homes, drawn to his father's world of music even as family life fragmented around him.",
+      false, false)
+  },
+
+  { lat: 44.9932, lng: -93.2795, icon: houseIcon(false, false),
+    popup: mkPopup('cat-home', 'Home &amp; Community',
+      'Glendale Seventh-day Adventist Church',
+      '1138 Glenwood Avenue, Minneapolis',
+      'Late 1960s &ndash; early 1970s',
+      'Attended with his Aunt Mary and cousin Chazz. Prince later said the most he got from religion as a child was "the experience of the choir" &mdash; a formative encounter with communal voice and song.',
+      false, false)
+  },
+
+  { lat: 45.0072, lng: -93.2805, icon: houseIcon(false, false),
+    popup: mkPopup('cat-home', 'Home &amp; Community',
+      'Lincoln Junior High School',
+      '2131 North 12th Avenue, Minneapolis',
+      '1969 &ndash; 1970',
+      "On his first day of sixth grade, Prince met Andre Anderson &mdash; later Andre Cymone &mdash; who had just moved to the neighbourhood. Their fathers had already performed together in the Prince Rogers Trio. A musical legacy passed across two generations.",
+      false, false)
+  },
+
+  // HOME & COMMUNITY — nonextant
+
+  { lat: 45.0037, lng: -93.2874, icon: houseIcon(true, false),
+    popup: mkPopup('cat-home', 'Home &amp; Community',
+      'Logan Avenue House',
+      '915 Logan Avenue North, Minneapolis',
+      '1958 &ndash; 1965 &middot; Birth &ndash; Age 6',
+      "The Nelson family's first home on the Northside, purchased on New Year's Eve 1958. Even as a toddler, his mother recalled Prince would seek out any piano or organ in a room. His first encounters with his father's music happened here.",
+      false, true)
+  },
+
+  { lat: 45.0052, lng: -93.2937, icon: houseIcon(true, false),
+    popup: mkPopup('cat-home', 'Home &amp; Community',
+      'John Hay Elementary School',
+      '1014 Penn Avenue North, Minneapolis',
+      '1968 &ndash; 1969 &middot; 5th grade',
+      "Prince's neighbourhood school, to which he returned after years bused to Kenwood Elementary across town. The shift coincided with his parents' marriage ending &mdash; an unsettled period that would eventually set him free to pursue music.",
+      false, true)
+  },
+
+  { lat: 45.0038, lng: -93.2948, icon: houseIcon(true, false),
+    popup: mkPopup('cat-home', 'Home &amp; Community',
+      'Phyllis Wheatley Community Center',
+      '809 Aldrich Avenue North, Minneapolis',
+      'Family connection from the 1940s&ndash;60s',
+      "A cornerstone of Black cultural life on Minneapolis's Northside, where John Nelson performed and first met Mattie Shaw &mdash; Prince's parents. The musical lineage that produced Prince was rooted, in part, in this community institution.",
+      false, true)
+  },
+
+  // MUSIC SITES — extant
+
+  { lat: 45.0028, lng: -93.2945, icon: musicIcon(false),
+    popup: mkPopup('cat-music', 'Where the Music Was Born',
+      "Charles Smith's House",
+      '927 Sheridan Avenue North, Minneapolis',
+      'c.1968 &ndash; 1974',
+      "Home of cousin Chazz Smith, where Prince's first band, Grand Central, was formed. A rehearsal base and creative hub for a tight circle of North Minneapolis musicians &mdash; the earliest seed of what would become the Minneapolis Sound.",
+      false, false)
+  },
+
+  { lat: 45.0072, lng: -93.2915, icon: houseIcon(false, false),
+    popup: mkPopup('cat-home', 'Home &amp; Community',
+      "Anderson House",
+      '1244 Russell Avenue North (Bernadette Anderson Way), Minneapolis',
+      'c.1974 &ndash; 1976',
+      "Home of Prince's closest early collaborator. The earliest known Prince recordings were made here on a cassette recorder. Grand Central rehearsals, songwriting sessions, the very first captured traces of what he would become. On the same street &mdash; renamed for Andre's mother &mdash; where the People's Museum now stands.",
+      false, false)
+  },
+
+  { lat: 45.0074, lng: -93.2915, icon: musicIcon(false),
+    popup: mkPopup('cat-music', 'Where the Music Was Born',
+      "Terry Jackson's House",
+      '1248 Russell Avenue North (Bernadette Anderson Way), Minneapolis',
+      'c.1973 &ndash; 1976',
+      "Home of bandmate Terry Jackson, directly next door to Andre Cymone's house. Regular rehearsal and songwriting base for the Grand Central circle. This short stretch of Russell Avenue was one of the most concentrated sites of early Prince musical activity anywhere in the city.",
+      false, false)
+  },
+
+  { lat: 45.0092, lng: -93.3025, icon: musicIcon(false),
+    popup: mkPopup('cat-music', 'Where the Music Was Born',
+      'Capri Theater',
+      '2027 West Broadway Avenue, Minneapolis',
+      'January 5&ndash;6, 1979',
+      "Prince's first performances after the release of his debut album For You under his Warner Brothers contract &mdash; a nineteen-year-old arriving on a public stage just blocks from where he'd spent years rehearsing in friends' living rooms.",
+      false, false)
+  },
+
+  // MUSIC SITES — nonextant
+
+  { lat: 45.0075, lng: -93.295, icon: musicIcon(true),
+    popup: mkPopup('cat-music', 'Where the Music Was Born',
+      'The Way Community Center',
+      '1900 block Plymouth Avenue North, Minneapolis',
+      '1960s &ndash; 1970s',
+      "A vital community music program in North Minneapolis. Early performances and music education for Prince and his peers &mdash; part of the broader neighbourhood ecosystem that nurtured the generation of musicians who would create the Minneapolis Sound.",
+      false, true)
+  },
+
+  { lat: 45.0098, lng: -93.278, icon: musicIcon(true),
+    popup: mkPopup('cat-music', 'Where the Music Was Born',
+      'A.S.I. Studio',
+      '711 West Broadway Avenue, Minneapolis',
+      'Early 1976',
+      "Demo recordings with Grand Central Corporation &mdash; Prince, Andre Cymone, and Morris Day &mdash; engineered by David Rivkin. One of the earliest studio sessions in the sequence of recordings that would land Prince a major recording contract at nineteen.",
+      false, true)
+  },
+
+  // MUSEUM
+
+  { lat: 45.0093, lng: -93.2918, icon: museumIcon(),
+    popup: mkPopup('cat-museum', "The People's Museum for Prince",
+      'Roberts Gallery',
+      '2400 Plymouth Avenue North (at Bernadette Anderson Way), Minneapolis MN 55411',
+      'June 7&ndash;27, 2026',
+      "A grassroots counter-museum marking ten years since Prince's passing &mdash; collecting stories, artwork, and artifacts from people worldwide whose lives he transformed. Sited at the corner of Plymouth Ave N and Bernadette Anderson Way (Russell Ave N), the street renamed for the woman who housed Prince during his formative years.",
+      false, false)
+  }
+
+];
+
+// ── Neighbourhood labels ────────────────────────────────────────────
+
+function labelMarker(lat, lng, text, subtext) {
+  var html = '<div style="font-family:Jost,sans-serif;text-align:center;pointer-events:none">'
+    + '<div style="font-size:0.65rem;font-weight:600;letter-spacing:0.12em;text-transform:uppercase;color:#3a2060;text-shadow:1px 1px 2px rgba(255,255,255,0.9),-1px -1px 2px rgba(255,255,255,0.9),1px -1px 2px rgba(255,255,255,0.9),-1px 1px 2px rgba(255,255,255,0.9)">' + text + '</div>'
+    + (subtext ? '<div style="font-size:0.55rem;font-weight:300;letter-spacing:0.08em;color:#6b50a0;text-shadow:1px 1px 2px rgba(255,255,255,0.9)">' + subtext + '</div>' : '')
+    + '</div>';
+  return L.marker([lat, lng], {
+    icon: L.divIcon({ html: html, className: '', iconSize: [120,30], iconAnchor: [60,15] }),
+    interactive: false,
+    keyboard: false
+  });
+}
+
+// Near North neighbourhood label
+labelMarker(45.017, -93.290, "Near North", "Prince's neighbourhood").addTo(map);
+// Jordan neighbourhood
+labelMarker(45.007, -93.308, "Jordan", "neighbourhood").addTo(map);
+// Broadway corridor
+labelMarker(45.011, -93.296, "West Broadway", "").addTo(map);
+// Downtown reference (south of sites)
+// downtown label removed — tile already shows Minneapolis
+
+// ── Add markers ─────────────────────────────────────────────────────
+
+var bounds = [];
+places.forEach(function(p) {
+  L.marker([p.lat, p.lng], { icon: p.icon })
+    .bindPopup(p.popup, { maxWidth: 270 })
+    .addTo(map);
+  bounds.push([p.lat, p.lng]);
+});
+
+map.setView([45.005, -93.293], 14);
+
+setTimeout(function() { map.invalidateSize(); }, 100);
+}; // end window.onload
+</script>
+</body>
+</html>
