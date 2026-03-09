@@ -73,6 +73,34 @@ header p {
   letter-spacing: 0.1em;
   text-transform: uppercase;
   margin-bottom: 11px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  cursor: pointer;
+  user-select: none;
+}
+
+.legend-toggle-arrow {
+  font-size: 0.7rem;
+  color: #9b7ec8;
+  transition: transform 0.25s ease;
+  display: none;
+}
+
+.legend-body {
+  overflow: hidden;
+  transition: max-height 0.3s ease;
+}
+
+@media (max-width: 600px) {
+  .legend {
+    min-width: 170px;
+    padding: 10px 13px;
+    bottom: 16px;
+    left: 10px;
+  }
+  .legend-toggle-arrow { display: inline; }
+  .legend-body.collapsed { max-height: 0 !important; }
 }
 
 .legend-item {
@@ -231,8 +259,10 @@ header p {
 
 <div id="map">
   <div class="legend">
-    <div class="legend-title">Map Key</div>
-
+    <div class="legend-title" onclick="toggleLegend()">
+      Map Key <span class="legend-toggle-arrow" id="legendArrow">▼</span>
+    </div>
+    <div class="legend-body" id="legendBody">
     <div class="legend-item">
       <div class="legend-icon">
         <svg width="22" height="22" viewBox="0 0 22 22" xmlns="http://www.w3.org/2000/svg">
@@ -296,8 +326,31 @@ header p {
         <span>Roberts Gallery &middot; June 7&ndash;27, 2026</span>
       </div>
     </div>
+    </div><!-- end legend-body -->
   </div>
 </div>
+
+<script>
+function toggleLegend() {
+  var body = document.getElementById('legendBody');
+  var arrow = document.getElementById('legendArrow');
+  if (window.innerWidth > 600) return;
+  if (body.classList.contains('collapsed')) {
+    body.classList.remove('collapsed');
+    body.style.maxHeight = body.scrollHeight + 'px';
+    arrow.style.transform = 'rotate(0deg)';
+  } else {
+    body.style.maxHeight = body.scrollHeight + 'px';
+    setTimeout(function(){ body.classList.add('collapsed'); }, 10);
+    arrow.style.transform = 'rotate(-90deg)';
+  }
+}
+// Set initial max-height for animation
+window.addEventListener('load', function(){
+  var body = document.getElementById('legendBody');
+  body.style.maxHeight = body.scrollHeight + 'px';
+});
+</script>
 
 <script>
 window.onload = function() {
